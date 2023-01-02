@@ -8,8 +8,6 @@
         <module>common</module>
         <module>model</module>
         <module>service</module>
-        <module>service-product</module>
-        <module>service-product</module>
         <module>server-gateway</module>
     </modules>
 

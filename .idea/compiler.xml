@@ -10,6 +10,7 @@
         <module name="server-gateway" />
         <module name="model" />
         <module name="common-util" />
+        <module name="service-item" />
         <module name="service-util" />
         <module name="service-product" />
       </profile>
@@ -22,6 +23,7 @@
       <module name="model" options="-parameters" />
       <module name="server-gateway" options="-parameters" />
       <module name="service" options="" />
+      <module name="service-item" options="-parameters" />
       <module name="service-product" options="-parameters" />
       <module name="service-util" options="-parameters" />
     </option>

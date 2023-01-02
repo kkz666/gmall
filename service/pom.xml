@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>service-product</module>
+        <module>service-item</module>
     </modules>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
