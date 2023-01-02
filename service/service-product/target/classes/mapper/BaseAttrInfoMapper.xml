@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--
+ namespace:接口的全限定类名
+-->
+<mapper namespace="com.kkz.gmall.product.mapper.BaseAttrInfoMapper">
+
+    <!--结果集处理
+    autoMapping="true":实现自动映射
+    column：返回数据字段名
+    property：实体类属性名
+
+    -->
+    <resultMap id="baseAttrInfoMap" type="com.kkz.gmall.model.product.BaseAttrInfo" autoMapping="true">
+        <id column="id" property="id"></id>
+        <!--
+        property: 实体类属性名
+        ofType: 实体类属性名对应的类型
+        -->
+        <collection property="attrValueList" ofType="com.kkz.gmall.model.product.BaseAttrValue" autoMapping="true">
+            <id column="attr_value_id" property="id"></id>
+        </collection>
+
+
+    </resultMap>
+
+    <!--根据分类id查询平台属性集合-->
+    <select id="selectAttrInfoList" resultMap="baseAttrInfoMap" >
+
+        select
+        bai.id,
+        bai.attr_name,
+        bai.category_id,
+        bai.category_level,
+        bav.id attr_value_id,
+        bav.value_name,
+        bav.attr_id
+        from base_attr_info bai inner join base_attr_value bav
+        on bai.id=bav.attr_id
+
+        <where>
+            <if test="category1Id !=null and category1Id !=0">
+                or ( bai.category_level=1 and bai.category_id=#{category1Id})
+            </if>
+            <if test="category2Id !=null and category2Id !=0">
+                or (bai.category_level=2 and bai.category_id=#{category2Id})
+            </if>
+            <if test="category3Id !=null and category3Id !=0">
+                or (bai.category_level=3 and bai.category_id=#{category3Id})
+            </if>
+
+
+        </where>
+        order by bai.category_level ,bai.id
+
+
+    </select>
+
+
+</mapper>
