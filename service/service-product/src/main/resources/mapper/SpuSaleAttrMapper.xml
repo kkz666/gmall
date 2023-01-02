@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kkz.gmall.product.mapper.SpuSaleAttrMapper">
+    <!--结果处理-手动映射-->
+    <resultMap id="spuSaleAttrMap" type="com.kkz.gmall.model.product.SpuSaleAttr" autoMapping="true">
+        <id column="id" property="id"></id>
+        <collection property="spuSaleAttrValueList" ofType="com.kkz.gmall.model.product.SpuSaleAttrValue" autoMapping="true">
+<!--            sale_attr_value_id是查询结果返回的-->
+            <id column="sale_attr_value_id" property="id"></id>
+        </collection>
+    </resultMap>
+    <!--
+    根据spuId查询销售属性和销售属性值集合
+    -->
+    <select id="selectSpuSaleAttrList"  resultMap="spuSaleAttrMap">
+        select
+            ssa.id,
+            ssa.spu_id,
+            ssa.base_sale_attr_id,
+            ssa.sale_attr_name,
+            ssav.id sale_attr_value_id,
+            ssav.sale_attr_value_name
+        from  spu_sale_attr ssa inner  join  spu_sale_attr_value ssav
+                                             on  ssa.spu_id=ssav.spu_id
+                                                 and ssa.base_sale_attr_id=ssav.base_sale_attr_id
+        where ssa.spu_id=#{spuId}
+    </select>
+</mapper>
