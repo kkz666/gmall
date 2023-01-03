@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE">
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
+		<title>我的订单</title>
+		<link rel="icon" href="./img/favicon.ico">
+
+    	<link rel="stylesheet" type="text/css" href="/css/all.css" />
+		<link rel="stylesheet" type="text/css" href="/css/pages-application.css" />
+		<link rel="stylesheet" type="text/css" href="/css/pages-mycomment.css" />
+
+		<div th:include="common/head :: head"></div>
+</head>
+
+	<body onunload="javascript:hm.postData();">
+		<!-- 头部栏位 -->
+		<!--页面顶部-->
+		<div th:include="common/header :: header"></div>
+
+		<div class="mycomment" id="comment">
+			<div class="py-container">
+				<div class="head">
+					<p class="tit">评价订单</p>
+					<p class="num">
+						<span class="gray">订单号：{{ orderInfo.outTradeNo }}</span>&nbsp;&nbsp;&nbsp;&nbsp;
+						<span class="gray" >{{ orderInfo.createTime }}</span>
+					</p>
+				</div>
+				<div class="service">
+					<div class="left">
+						<div class="inner">
+							<img src="./img/_/bg-who1.png" />
+							<div class="text">
+								<p class="title">店铺名称</p>
+								<ul class="remark">
+									<li>
+										<span>综合</span>
+										<span>4.5</span>
+									</li>
+									<li>
+										<span>商品</span>
+										<span>4.5</span>
+									</li>
+									<li>
+										<span>服务</span>
+										<span>4.5</span>
+									</li>
+									<li>
+										<span>物流</span>
+										<span>4.5</span>
+									</li>
+								</ul>
+
+
+							</div>
+							<div style="clear:both"></div>
+						</div>
+					</div>
+					<div class="stars">
+						<ul>
+							<li>
+								商品符合度
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+							</li>
+							<li>
+								店家服务态度
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+							</li>
+							<li>物流发货速度：
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+							</li>
+							<li>配送员服务
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+								<i class="sui-icon icon-tb-favorfill"></i>
+							<li>
+						</ul>
+					</div>
+					<div style="clear:both"></div>
+				</div>
+				<div style="clear:both"></div>
+				<div class="goods">
+					<div class="good-item" v-for="(detail,index) in orderInfo.orderDetailList" :key="detail.id">
+						<div class="left">
+							<div class="img-intro">
+								<img :src="detail.imgUrl" width="90"/>
+								<p>
+									<a :href="'http://item.atguigu.cn/'+detail.skuId+'.html'" >{{ detail.skuName }}</a>
+								</p>
+								<p>¥{{ detail.orderPrice }}</p>
+								<p class="gray"></p>
+							</div>
+						</div>
+						<div class="right">
+							<div class="summary-wrap clearfix">
+								<dl>
+									<dt>商品评分</dt>
+									<span>
+									<i @click="appraise(index, 1)" :class="detail.appraise >= 1 ? 'sui-icon icon-tb-favorfill' : 'sui-icon icon-tb-favor'"></i>
+									<i @click="appraise(index, 2)" :class="detail.appraise >= 2 ? 'sui-icon icon-tb-favorfill' : 'sui-icon icon-tb-favor'"></i>
+									<i @click="appraise(index, 3)" :class="detail.appraise >= 3 ? 'sui-icon icon-tb-favorfill' : 'sui-icon icon-tb-favor'"></i>
+									<i @click="appraise(index, 4)" :class="detail.appraise >= 4 ? 'sui-icon icon-tb-favorfill' : 'sui-icon icon-tb-favor'"></i>
+									<i @click="appraise(index, 5)" :class="detail.appraise >= 5 ? 'sui-icon icon-tb-favorfill' : 'sui-icon icon-tb-favor'"></i>
+								</span>
+								</dl>
+								<dl>
+									<dt>评价晒单</dt>
+									<div class="input">
+										<textarea id="inputComment" v-model="detail.commentTxt" placeholder="商品是否给力？快分享你的购物心得吧~" maxlength="500" @input="commentTxt()"></textarea>
+									</div>
+									<div class="bottom-tool">
+										<div class="wordnumber">还可以输入
+											<span id="count">{{ 500 - detail.commentTxt.length }}</span> 个文字</div>
+									</div>
+								</dl>
+							</div>
+						</div>
+						<div style="clear:both"></div>
+					</div>
+
+				</div>
+				<div class="submit">
+					<button class="sui-btn btn-danger btn-submit" @click="save()">{{ submitLabl }}</button>
+<!--					<input type="radio" name="type" value="1">-->
+<!--					<span>匿名评价</span>-->
+				</div>
+
+			</div>
+		</div>
+
+		<!--页面底部-->
+<div class="clearfix footer">
+	<div class="py-container">
+		<div class="footlink">
+			<div class="clearfix Mod-list">
+				<div class="yui3-g">
+					<div class="yui3-u-1-6">
+						<h4>购物指南</h4>
+						<ul class="unstyled">
+							<li>购物流程</li>
+							<li>会员介绍</li>
+							<li>生活旅行/团购</li>
+							<li>常见问题</li>
+							<li>购物指南</li>
+						</ul>
+
+					</div>
+					<div class="yui3-u-1-6">
+						<h4>配送方式</h4>
+						<ul class="unstyled">
+							<li>上门自提</li>
+							<li>211限时达</li>
+							<li>配送服务查询</li>
+							<li>配送费收取标准</li>
+							<li>海外配送</li>
+						</ul>
+					</div>
+					<div class="yui3-u-1-6">
+						<h4>支付方式</h4>
+						<ul class="unstyled">
+							<li>货到付款</li>
+							<li>在线支付</li>
+							<li>分期付款</li>
+							<li>邮局汇款</li>
+							<li>公司转账</li>
+						</ul>
+					</div>
+					<div class="yui3-u-1-6">
+						<h4>售后服务</h4>
+						<ul class="unstyled">
+							<li>售后政策</li>
+							<li>价格保护</li>
+							<li>退款说明</li>
+							<li>返修/退换货</li>
+							<li>取消订单</li>
+						</ul>
+					</div>
+					<div class="yui3-u-1-6">
+						<h4>特色服务</h4>
+						<ul class="unstyled">
+							<li>夺宝岛</li>
+							<li>DIY装机</li>
+							<li>延保服务</li>
+							<li>尚品汇E卡</li>
+							<li>尚品汇通信</li>
+						</ul>
+					</div>
+					<div class="yui3-u-1-6">
+						<h4>帮助中心</h4>
+						<img src="./img/wx_cz.jpg">
+					</div>
+				</div>
+			</div>
+			<div class="Mod-copyright">
+				<ul class="helpLink">
+					<li>关于我们<span class="space"></span></li>
+					<li>联系我们<span class="space"></span></li>
+					<li>关于我们<span class="space"></span></li>
+					<li>商家入驻<span class="space"></span></li>
+					<li>营销中心<span class="space"></span></li>
+					<li>友情链接<span class="space"></span></li>
+					<li>关于我们<span class="space"></span></li>
+					<li>营销中心<span class="space"></span></li>
+					<li>友情链接<span class="space"></span></li>
+					<li>关于我们</li>
+				</ul>
+				<p>地址：北京市昌平区宏福科技园综合楼6层</p>
+				<p>京ICP备19006430号</p>
+			</div>
+		</div>
+	</div>
+</div>
+<!--页面底部END-->
+<script src="/js/api/comment.js"></script>
+<script th:inline="javascript">
+	var item = new Vue({
+		el: '#comment',
+
+		data: {
+			orderInfo: [[${orderInfo}]],
+			submitLabl: '提交',
+		},
+
+        created () {
+			this.init()
+        },
+
+        methods: {
+			init() {
+				for(var i=0; i<this.orderInfo.orderDetailList.length; i++) {
+					this.orderInfo.orderDetailList[i].appraise = 5
+					this.orderInfo.orderDetailList[i].commentTxt = ''
+				}
+			},
+
+			appraise(index, count) {
+				this.orderInfo.orderDetailList[index].appraise = count
+				//在v-for循环中，如果我们在函数中改变了item中的值，在console.log()中查看是修改成功了，但在页面中没有及时刷新改变后的值
+				//解决方法：使用vue自带的 this.$forceUpdate() 迫使 Vue 实例重新渲染
+				this.$forceUpdate()
+			},
+
+			commentTxt() {
+				this.$forceUpdate()
+			},
+
+			save() {
+				//防止重复提交
+				if(this.submitLabl == '正在提交...') {
+					return;
+				}
+
+				var commentInfos = []
+				for(var i=0; i<this.orderInfo.orderDetailList.length; i++) {
+					//if(this.orderInfo.orderDetailList[i].refundStatus == '' || this.orderInfo.orderDetailList[i].refundStatus == 'NOT_APPROVED') {
+						var commentInfo = {
+							skuId: this.orderInfo.orderDetailList[i].skuId,
+							spuId: 0,
+							orderId: this.orderInfo.id,
+							appraise: this.orderInfo.orderDetailList[i].appraise,
+							commentTxt: this.orderInfo.orderDetailList[i].commentTxt
+						}
+						if('' == commentInfo.commentTxt) {
+							alert('评价内容必须输入')
+							return
+						}
+
+						commentInfos.push(commentInfo)
+					//}
+				}
+				if(commentInfos.length == 0) {
+					alert('已退款或退货不能评价')
+					return;
+				}
+
+				this.submitLabl = '正在提交...'
+				comment.save(commentInfos).then(response => {
+					window.location = 'http://order.gmall.com/myOrder.html'
+				})
+			}
+        }
+	})
+</script>
+
+<script th:inline="javascript">
+	window.page = {};
+	window.page.page_id = "orders_wait_comment";
+	// window.page.item = {
+	// 	"page_item_type": "order_id",
+	// 	"page_item": [[${orderInfo.id}]]
+	// }
+	window.page.page_item_type = "order_id";
+	window.page.page_item = [[${orderInfo.id}]]
+	window.page.sourceType = "query"; //页面对象id
+</script>
+<script src="/hm.js"></script>
+</body>
+
+</html>

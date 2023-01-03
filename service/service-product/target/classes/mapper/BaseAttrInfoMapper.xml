@@ -56,5 +56,20 @@
 
     </select>
 
-
+    <!--
+根据skuId 获取平台属性数据
+-->
+    <select id="selectAttrList" resultMap="baseAttrInfoMap">
+        select   bai.id,
+                 bai.attr_name,
+                 bai.category_id,
+                 bai.category_level,
+                 bav.id attr_value_id ,
+                 bav.value_name,
+                 bav.attr_id
+        from base_attr_info bai
+                 inner join  base_attr_value bav  on bai.id=bav.attr_id
+                 inner join  sku_attr_value skv on skv.value_id=bav.id
+        where skv.sku_id=#{skuId}
+    </select>
 </mapper>

@@ -8,11 +8,15 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="server-gateway" />
-        <module name="model" />
+        <module name="web-all" />
         <module name="common-util" />
+        <module name="service-product-client" />
+        <module name="service-product" />
+        <module name="service-item-client" />
+        <module name="web-util" />
+        <module name="model" />
         <module name="service-item" />
         <module name="service-util" />
-        <module name="service-product" />
       </profile>
     </annotationProcessing>
   </component>
@@ -23,9 +27,15 @@
       <module name="model" options="-parameters" />
       <module name="server-gateway" options="-parameters" />
       <module name="service" options="" />
+      <module name="service-client" options="-parameters" />
       <module name="service-item" options="-parameters" />
+      <module name="service-item-client" options="-parameters" />
       <module name="service-product" options="-parameters" />
+      <module name="service-product-client" options="-parameters" />
       <module name="service-util" options="-parameters" />
+      <module name="web" options="-parameters" />
+      <module name="web-all" options="-parameters" />
+      <module name="web-util" options="-parameters" />
     </option>
   </component>
 </project>

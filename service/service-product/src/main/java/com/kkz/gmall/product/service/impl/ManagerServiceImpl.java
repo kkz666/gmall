@@ -11,7 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ManagerServiceImpl implements ManagerService {
@@ -45,6 +48,8 @@ public class ManagerServiceImpl implements ManagerService {
     private SkuAttrValueMapper skuAttrValueMapper;
     @Autowired
     private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
+    @Autowired
+    private BaseCategoryViewMapper baseCategoryViewMapper;
 
     @Override
     public List<BaseCategory1> getCategory1() {
@@ -371,5 +376,109 @@ public class ManagerServiceImpl implements ManagerService {
         //设置修改的内容
         skuInfo.setIsSale(0);
         skuInfoMapper.updateById(skuInfo);
+    }
+    /**
+     * 根据skuId查询skuInfo信息和图片列表
+     * @param skuId
+     * @return
+     */
+    @Override
+    public SkuInfo getSkuInfo(Long skuId) {
+        //查询skuInfo
+        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        //根据skuId查询图片列表
+        //查询条件对象
+        //select *from sku_image where sku_id=skuId
+        QueryWrapper<SkuImage> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("sku_id",skuId);
+        List<SkuImage> skuImages = skuImageMapper.selectList(queryWrapper);
+        //设置图片列表
+        skuInfo.setSkuImageList(skuImages);
+        return skuInfo;
+    }
+
+    /**
+     * 根据三级分类id获取分类信息
+     * @param category3Id
+     * @return
+     */
+    @Override
+    public BaseCategoryView getCategoryView(Long category3Id) {
+        return baseCategoryViewMapper.selectById(category3Id);
+    }
+
+    /**
+     * 根据skuId查询sku实时价格
+     * @param skuId
+     * @return
+     */
+    @Override
+    public BigDecimal getSkuPrice(Long skuId) {
+        //查询skuInfo对象
+        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        //判断
+        if(skuInfo != null){
+            return skuInfo.getPrice();
+        }
+        return new BigDecimal("0");
+    }
+    /**
+     * 根据spuId,skuId 获取销售属性数据
+     * @param skuId
+     * @param spuId
+     * @return
+     */
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
+        List<SpuSaleAttr> spuSaleAttrList = spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
+        return spuSaleAttrList ;
+    }
+
+    /**
+     * 根据spuId 获取到销售属性值Id 与skuId 组成的数据集
+     * @param spuId
+     * @return
+     */
+    @Override
+    public Map getSkuValueIdsMap(Long spuId) {
+        //查询对应关系集合
+        List<Map> mapList = skuSaleAttrValueMapper.selectSkuValueIdsMap(spuId);
+        //创建map整合返回的数据
+        Map<Object ,Object> resultMap = new HashMap();
+        //判断
+        if(!CollectionUtils.isEmpty(mapList)){
+            for (Map map : mapList) {
+                //map 只有一条数据
+                //整合所有 key 属性id拼接的结果  value skuId
+                resultMap.put(map.get("value_ids"), map.get("sku_id"));
+            }
+        }
+        return resultMap;
+    }
+
+    /**
+     * 根据spuid查询海报集合数据
+     * @param spuId
+     * @return
+     */
+    @Override
+    public List<SpuPoster> findSpuPosterBySpuId(Long spuId) {
+        //查询sql select *from spu_poster where  spu_id=spuId
+        //创建条件对象
+        QueryWrapper<SpuPoster> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("spu_id",spuId);
+        //执行查询
+        List<SpuPoster> posterList = spuPosterMapper.selectList(queryWrapper);
+        return posterList;
+    }
+
+    /**
+     * 根据skuId 获取平台属性数据
+     * @param skuId
+     * @return
+     */
+    @Override
+    public List<BaseAttrInfo> getAttrList(Long skuId) {
+        return baseAttrInfoMapper.selectAttrList(skuId);
     }
 }

@@ -12,6 +12,7 @@
     <modules>
         <module>common-util</module>
         <module>service-util</module>
+        <module>web-util</module>
     </modules>
     <artifactId>common</artifactId>
 
