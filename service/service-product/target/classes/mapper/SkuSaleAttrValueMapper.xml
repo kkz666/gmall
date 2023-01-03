@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kkz.gmall.product.mapper.SkuSaleAttrValueMapper">
+    <resultMap id="skuSaleAttrValueMap" type="java.util.Map"  autoMapping="true">
+    </resultMap>
+    <!--根据spuId 获取到销售属性值Id 与skuId 组成的数据集-->
+    <select id="selectSkuValueIdsMap" resultMap="skuSaleAttrValueMap">
+        select
+            group_concat(skav.sale_attr_value_id order by ssav.base_sale_attr_id separator '|' ) value_ids,
+            sku_id
+        from sku_sale_attr_value skav
+                 inner  join spu_sale_attr_value ssav on ssav.id=skav.sale_attr_value_id
+        where skav.spu_id=#{spuId}
+        group by skav.sku_id
+    </select>
+</mapper>
