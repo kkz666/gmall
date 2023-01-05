@@ -40,7 +40,7 @@ public class RedissonConfig {
     RedissonClient redissonSingle() {
         Config config = new Config();
         if(StringUtils.isEmpty(host)){
-            throw new RuntimeException("host is  empty");
+            throw new RuntimeException("host is empty");
         }
         SingleServerConfig serverConfig = config.useSingleServer()
                 //redis://127.0.0.1:7181

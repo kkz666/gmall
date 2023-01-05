@@ -3,18 +3,21 @@ package com.kkz.gmall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kkz.gmall.common.constant.RedisConst;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.mapper.*;
 import com.kkz.gmall.product.service.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.cache.CacheProperties;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ManagerServiceImpl implements ManagerService {
@@ -50,6 +53,8 @@ public class ManagerServiceImpl implements ManagerService {
     private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
     @Autowired
     private BaseCategoryViewMapper baseCategoryViewMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     public List<BaseCategory1> getCategory1() {
@@ -384,13 +389,99 @@ public class ManagerServiceImpl implements ManagerService {
      */
     @Override
     public SkuInfo getSkuInfo(Long skuId) {
+//        return getSkuInfoDB(skuId);
+        return getSkuInfoRedis(skuId);
+    }
+    /**
+     * 获取skuIfo从缓存中获取数据
+     * redis实现分布式锁
+     * @param skuId
+     * @return
+     *
+     *  实现步骤：
+     *   1.定义存储skuinf的key
+     *   2.根据skuKey获取skuinfo的缓存数据
+     *   3.判断
+     *      有  直接返回结束
+     *      没有
+     *        定义锁的key
+     *        尝试加锁
+     *          失败  睡眠，重试自旋
+     *          成功 查询数据库
+     *          判断是否有值
+     *           有，直接返回，缓存到数据库
+     *           没有，创建空值，返回数据
+     *          释放锁
+     */
+    private SkuInfo getSkuInfoRedis(Long skuId) {
+        try {
+            // 定义key
+            String skuKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKUKEY_SUFFIX;
+            // 尝试从reddis获取数据
+            SkuInfo skuInfo = (SkuInfo) redisTemplate.opsForValue().get(skuKey);
+            // 判断是否有值
+            if (skuInfo == null) {
+                // 定义锁的key
+                String lockKey = RedisConst.SKUKEY_PREFIX + skuKey + RedisConst.SKULOCK_SUFFIX;
+                // 尝试获取锁
+                String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+                // 获取锁
+                Boolean flag = redisTemplate.opsForValue().setIfAbsent(lockKey, uuid, RedisConst.SKULOCK_EXPIRE_PX2, TimeUnit.SECONDS);
+                if (flag) {
+                    // 查询数据库
+                    SkuInfo skuInfoDB = getSkuInfoDB(skuId);
+                    // 判断数据中是否有值
+                    if (skuInfoDB == null) {
+                        // 数据库中没有这个sku
+                        SkuInfo skuInfo1 = new SkuInfo();
+                        redisTemplate.opsForValue().set(skuKey, skuInfo1, RedisConst.SKUKEY_TEMPORARY_TIMEOUT, TimeUnit.SECONDS);
+                        return skuInfo1;
+                    } else {
+                        redisTemplate.opsForValue().set(skuKey, skuInfoDB, RedisConst.SKUKEY_TIMEOUT, TimeUnit.SECONDS);
+                        //释放锁-lua脚本
+                        //定义lua脚本
+                        String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
+                                "then\n" +
+                                "    return redis.call(\"del\",KEYS[1])\n" +
+                                "else\n" +
+                                "    return 0\n" +
+                                "end";
+                        //创建脚本对象
+                        DefaultRedisScript<Long> defaultRedisScript = new DefaultRedisScript<>();
+                        //设置脚本
+                        defaultRedisScript.setScriptText(script);
+                        //设置返回 值类型
+                        defaultRedisScript.setResultType(Long.class);
+                        //执行删除
+                        redisTemplate.execute(defaultRedisScript, Arrays.asList("lock"), uuid);
+                        return skuInfoDB;
+                    }
+                } else {
+                    Thread.sleep(100);
+                    return getSkuInfoRedis(skuId);
+                }
+            } else {
+                return skuInfo;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // 缓存方法出现异常的时候查询数据库
+        return getSkuInfoDB(skuId);
+    }
+    /**
+     * 查询数据库获取skuInfo信息
+     * @param skuId
+     * @return
+     */
+    private SkuInfo getSkuInfoDB(Long skuId) {
         //查询skuInfo
         SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
         //根据skuId查询图片列表
         //查询条件对象
         //select *from sku_image where sku_id=skuId
         QueryWrapper<SkuImage> queryWrapper=new QueryWrapper<>();
-        queryWrapper.eq("sku_id",skuId);
+        queryWrapper.eq("sku_id", skuId);
         List<SkuImage> skuImages = skuImageMapper.selectList(queryWrapper);
         //设置图片列表
         skuInfo.setSkuImageList(skuImages);
