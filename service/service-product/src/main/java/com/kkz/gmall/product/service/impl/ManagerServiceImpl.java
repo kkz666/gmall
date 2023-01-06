@@ -3,13 +3,18 @@ package com.kkz.gmall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kkz.gmall.common.cache.GmallCache;
 import com.kkz.gmall.common.constant.RedisConst;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.mapper.*;
 import com.kkz.gmall.product.service.ManagerService;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +60,8 @@ public class ManagerServiceImpl implements ManagerService {
     private BaseCategoryViewMapper baseCategoryViewMapper;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
     @Override
     public List<BaseCategory1> getCategory1() {
@@ -337,6 +344,9 @@ public class ManagerServiceImpl implements ManagerService {
                 skuSaleAttrValueMapper.insert(skuSaleAttrValue);
             }
         }
+        // 告诉布隆过滤器
+        RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter(RedisConst.SKU_BLOOM_FILTER);
+        bloomFilter.add(skuInfo.getId());
     }
 
     /**
@@ -388,9 +398,62 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = RedisConst.SKUKEY_PREFIX)
     public SkuInfo getSkuInfo(Long skuId) {
-//        return getSkuInfoDB(skuId);
-        return getSkuInfoRedis(skuId);
+        // 查询数据库获取数据
+        return getSkuInfoDB(skuId);
+        // 使用redis分布式锁缓存数据
+//        return getSkuInfoRedis(skuId);
+        // Redisson
+//        return getSkuInfoRedisson(skuId);
+    }
+    /**
+     * 使用reddisson改造skuinfo信息获取
+     * @param skuId
+     * @return
+     */
+    private SkuInfo getSkuInfoRedisson(Long skuId) {
+        try {
+            //定义sku数据获取的key
+            String skuKey = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKUKEY_SUFFIX;
+            //从缓冲中获取数据数据
+            SkuInfo skuInfo = (SkuInfo) redisTemplate.opsForValue().get(skuKey);
+            if (skuInfo == null) {
+                // 定义锁的key
+                String skuLock = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKULOCK_SUFFIX;
+                // 获取锁
+                RLock lock = redissonClient.getLock(skuLock);
+                // 加锁
+                boolean flag = lock.tryLock(RedisConst.SKULOCK_EXPIRE_PX1, RedisConst.SKULOCK_EXPIRE_PX2, TimeUnit.SECONDS);
+                if (flag) {
+                    try {
+                        // 获取到了锁,查询数据库
+                        SkuInfo skuInfoDB = getSkuInfoDB(skuId);
+                        if (skuInfoDB == null) {
+                            //存储null
+                            skuInfoDB = new SkuInfo();
+                            redisTemplate.opsForValue().set(skuKey, skuInfoDB, RedisConst.SKUKEY_TEMPORARY_TIMEOUT, TimeUnit.SECONDS);
+                            return skuInfoDB;
+                        } else {
+                            //存储
+                            redisTemplate.opsForValue().set(skuKey, skuInfoDB, RedisConst.SKUKEY_TIMEOUT, TimeUnit.SECONDS);
+                            //返回
+                            return skuInfoDB;
+                        }
+                    } finally {
+                        lock.unlock();
+                    }
+                } else {
+                    Thread.sleep(100);
+                    return getSkuInfoRedisson(skuId);
+                }
+            } else {
+                return skuInfo;
+            }
+        }catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return getSkuInfoDB(skuId);
     }
     /**
      * 获取skuIfo从缓存中获取数据
@@ -453,7 +516,7 @@ public class ManagerServiceImpl implements ManagerService {
                         //设置返回 值类型
                         defaultRedisScript.setResultType(Long.class);
                         //执行删除
-                        redisTemplate.execute(defaultRedisScript, Arrays.asList("lock"), uuid);
+                        redisTemplate.execute(defaultRedisScript, Arrays.asList(lockKey), uuid);
                         return skuInfoDB;
                     }
                 } else {
@@ -484,7 +547,9 @@ public class ManagerServiceImpl implements ManagerService {
         queryWrapper.eq("sku_id", skuId);
         List<SkuImage> skuImages = skuImageMapper.selectList(queryWrapper);
         //设置图片列表
-        skuInfo.setSkuImageList(skuImages);
+        if (skuInfo != null) {
+            skuInfo.setSkuImageList(skuImages);
+        }
         return skuInfo;
     }
 
@@ -494,6 +559,7 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = "categoryView:")
     public BaseCategoryView getCategoryView(Long category3Id) {
         return baseCategoryViewMapper.selectById(category3Id);
     }
@@ -505,11 +571,22 @@ public class ManagerServiceImpl implements ManagerService {
      */
     @Override
     public BigDecimal getSkuPrice(Long skuId) {
-        //查询skuInfo对象
-        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
-        //判断
-        if(skuInfo != null){
-            return skuInfo.getPrice();
+        String skuLock = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKULOCK_SUFFIX;
+        // 获取锁
+        RLock lock = redissonClient.getLock(skuLock);
+        try {
+            // 加锁
+            lock.lock();
+            //查询skuInfo对象
+            SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+            //判断
+            if(skuInfo != null){
+                return skuInfo.getPrice();
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            lock.unlock();
         }
         return new BigDecimal("0");
     }
@@ -520,6 +597,7 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = "spuSaleAttrListCheckBySku:")
     public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
         List<SpuSaleAttr> spuSaleAttrList = spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
         return spuSaleAttrList ;
@@ -531,6 +609,7 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = "skuValueIdsMap:")
     public Map getSkuValueIdsMap(Long spuId) {
         //查询对应关系集合
         List<Map> mapList = skuSaleAttrValueMapper.selectSkuValueIdsMap(spuId);
@@ -553,6 +632,7 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = "findSpuPosterBySpuId:")
     public List<SpuPoster> findSpuPosterBySpuId(Long spuId) {
         //查询sql select *from spu_poster where  spu_id=spuId
         //创建条件对象
@@ -569,6 +649,7 @@ public class ManagerServiceImpl implements ManagerService {
      * @return
      */
     @Override
+    @GmallCache(prefix = "attrList:")
     public List<BaseAttrInfo> getAttrList(Long skuId) {
         return baseAttrInfoMapper.selectAttrList(skuId);
     }
