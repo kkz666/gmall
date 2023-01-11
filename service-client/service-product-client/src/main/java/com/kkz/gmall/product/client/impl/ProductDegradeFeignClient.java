@@ -1,5 +1,6 @@
 package com.kkz.gmall.product.client.impl;
 
+import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.client.ProductFeignClient;
 import org.springframework.stereotype.Component;
@@ -43,5 +44,10 @@ public class ProductDegradeFeignClient implements ProductFeignClient {
     @Override
     public List<BaseAttrInfo> getAttrList(Long skuId) {
         return null;
+    }
+
+    @Override
+    public Result getBaseCategoryList() {
+        return Result.fail();
     }
 }

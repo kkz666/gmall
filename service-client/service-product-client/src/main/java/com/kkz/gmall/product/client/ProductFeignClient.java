@@ -1,5 +1,7 @@
 package com.kkz.gmall.product.client;
 
+import com.alibaba.fastjson.JSONObject;
+import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.client.impl.ProductDegradeFeignClient;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -75,4 +77,12 @@ public interface ProductFeignClient {
      */
     @GetMapping("api/product/inner/getAttrList/{skuId}")
     List<BaseAttrInfo> getAttrList(@PathVariable Long skuId);
+    /**
+     * 首页数据查询三级分类数
+     * api/product/inner/getBaseCategoryList
+     *
+     * @return
+     */
+    @GetMapping("api/product/inner/getBaseCategoryList")
+    Result getBaseCategoryList();
 }

@@ -1,5 +1,7 @@
 package com.kkz.gmall.product.controller;
 
+import com.alibaba.fastjson.JSONObject;
+import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.service.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,17 @@ import java.util.Map;
 public class ProductApiController {
     @Autowired
     private ManagerService managerService;
+    /**
+     * 首页数据查询三级分类数
+     * api/product/inner/getBaseCategoryList
+     *
+     * @return
+     */
+    @GetMapping("/getBaseCategoryList")
+    public Result getBaseCategoryList(){
+        List<JSONObject> result = managerService.getBaseCategoryList();
+        return Result.ok(result);
+    }
     /**
      * /api/product/inner/getSkuInfo/{skuId}
      * 根据skuId查询skuInfo信息和图片列表

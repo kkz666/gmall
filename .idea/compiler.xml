@@ -14,6 +14,7 @@
         <module name="service-product" />
         <module name="service-item-client" />
         <module name="web-util" />
+        <module name="service-list" />
         <module name="model" />
         <module name="service-item" />
         <module name="service-util" />
@@ -30,6 +31,7 @@
       <module name="service-client" options="-parameters" />
       <module name="service-item" options="-parameters" />
       <module name="service-item-client" options="-parameters" />
+      <module name="service-list" options="-parameters" />
       <module name="service-product" options="-parameters" />
       <module name="service-product-client" options="-parameters" />
       <module name="service-util" options="-parameters" />

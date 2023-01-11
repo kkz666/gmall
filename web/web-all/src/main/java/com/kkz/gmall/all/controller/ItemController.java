@@ -1,4 +1,4 @@
-package com.kkz.gmall.all;
+package com.kkz.gmall.all.controller;
 
 import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.item.client.ItemFeignClient;
