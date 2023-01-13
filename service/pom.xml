@@ -15,6 +15,7 @@
         <module>service-product</module>
         <module>service-item</module>
         <module>service-list</module>
+        <module>service-user</module>
     </modules>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

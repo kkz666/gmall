@@ -3,6 +3,7 @@ package com.kkz.gmall.product.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.model.product.*;
+import com.kkz.gmall.product.service.BaseTrademarkService;
 import com.kkz.gmall.product.service.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -106,4 +107,14 @@ public class ProductApiController {
     public List<BaseAttrInfo> getAttrList(@PathVariable Long skuId){
         return managerService.getAttrList(skuId);
     }
+    /**
+     * 通过品牌Id 集合来查询数据
+     * @param tmId
+     * @return
+     */
+    @GetMapping("getTrademark/{tmId}")
+    public BaseTrademark getTrademark(@PathVariable("tmId")Long tmId){
+        return managerService.getTrademarkByTmId(tmId);
+    }
+
 }

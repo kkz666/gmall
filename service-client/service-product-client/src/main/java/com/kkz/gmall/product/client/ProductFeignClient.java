@@ -85,4 +85,12 @@ public interface ProductFeignClient {
      */
     @GetMapping("api/product/inner/getBaseCategoryList")
     Result getBaseCategoryList();
+    /**
+     * 根据品牌Id 获取品牌数据
+     * api/product/inner/getTrademark/{tmId}
+     * @param tmId
+     * @return
+     */
+    @GetMapping("api/product/inner/getTrademark/{tmId}")
+    BaseTrademark getTrademark(@PathVariable("tmId")Long tmId);
 }

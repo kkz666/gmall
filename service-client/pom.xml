@@ -13,6 +13,7 @@
     <modules>
         <module>service-product-client</module>
         <module>service-item-client</module>
+        <module>service-list-client</module>
     </modules>
 
     <properties>

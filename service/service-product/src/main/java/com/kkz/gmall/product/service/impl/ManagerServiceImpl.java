@@ -61,6 +61,8 @@ public class ManagerServiceImpl implements ManagerService {
     @Autowired
     private BaseCategoryViewMapper baseCategoryViewMapper;
     @Autowired
+    private BaseTrademarkMapper baseTrademarkMapper;
+    @Autowired
     private RedisTemplate redisTemplate;
     @Autowired
     private RedissonClient redissonClient;
@@ -724,4 +726,9 @@ public class ManagerServiceImpl implements ManagerService {
         }
         return resultList;
     }
+    @Override
+    public BaseTrademark getTrademarkByTmId(Long tmId) {
+        return baseTrademarkMapper.selectById(tmId);
+    }
+
 }

@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @EnableDiscoveryClient
 @ComponentScan(basePackages = "com.kkz.gmall")
-@EnableFeignClients
+@EnableFeignClients(basePackages = "com.kkz.gmall")
 public class ServiceListApplication {
     public static void main(String[] args) {
         SpringApplication.run(ServiceListApplication.class, args);
