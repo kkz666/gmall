@@ -10,10 +10,7 @@ import com.kkz.gmall.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -35,5 +32,12 @@ public class PassportController {
     @PostMapping("/login")
     public Result login(@RequestBody UserInfo userInfo, HttpServletRequest request){
         return userService.login(userInfo, request);
+    }
+    /**
+     * /api/user/passport/logout
+     */
+    @GetMapping("logout")
+    public Result logout(HttpServletRequest request){
+        return userService.logout(request);
     }
 }

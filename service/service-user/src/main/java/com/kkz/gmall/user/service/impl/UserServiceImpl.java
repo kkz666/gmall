@@ -61,4 +61,16 @@ public class UserServiceImpl implements UserService {
             return Result.fail().message("用户名或者密码错误！！！");
         }
     }
+
+    /**
+     * 登出
+     * @param request
+     * @return
+     */
+    @Override
+    public Result logout(HttpServletRequest request) {
+        //请求redis中的数据
+        redisTemplate.delete(RedisConst.USER_LOGIN_KEY_PREFIX + request.getHeader("token"));
+        return Result.ok();
+    }
 }

@@ -12,4 +12,5 @@ public interface UserService {
      * @return
      */
     Result login(UserInfo userInfo, HttpServletRequest request);
+    Result logout(HttpServletRequest request);
 }
