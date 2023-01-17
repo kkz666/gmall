@@ -13,6 +13,7 @@
         <module>common-util</module>
         <module>service-util</module>
         <module>web-util</module>
+        <module>rabbit-util</module>
     </modules>
     <artifactId>common</artifactId>
 

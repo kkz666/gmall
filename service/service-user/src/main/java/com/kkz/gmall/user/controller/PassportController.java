@@ -25,7 +25,7 @@ public class PassportController {
     private UserService userService;
 
     /**
-     *   ///api/user/passport/login
+     * /api/user/passport/login
      * 用户登录
      * @return
      */

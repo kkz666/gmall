@@ -140,8 +140,11 @@ public class OrderInfo extends BaseEntity {
 
     // 计算总价格
     public void sumTotalAmount(){
+        // 总金额
         BigDecimal totalAmount = new BigDecimal("0");
+        // 原价金额
         BigDecimal originalTotalAmount = new BigDecimal("0");
+        // 优惠券
         BigDecimal couponAmount = new BigDecimal("0");
         //  减去优惠劵
         if(null != couponInfo) {

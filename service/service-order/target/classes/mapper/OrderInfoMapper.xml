@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper SYSTEM "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kkz.gmall.order.mapper.OrderInfoMapper">
+    <resultMap id="orderInfoMap" type="com.kkz.gmall.model.order.OrderInfo" autoMapping="true">
+        <id column="id" property="id"></id>
+<!--        将外层id赋值给子查询的orderId-->
+        <collection property="orderDetailList"
+                    ofType="com.kkz.gmall.model.order.OrderDetail"
+                    autoMapping="true"
+                    column="{orderId = id}"
+                    select="selectOrderDetailByOrderId">
+        </collection>
+    </resultMap>
+    <!-- 用于select查询公用抽取的列 -->
+    <sql id="orderColumns">
+        id,consignee,consignee_tel,total_amount,order_status,user_id,payment_way,delivery_address,order_comment,out_trade_no,trade_body,create_time,expire_time,process_status,tracking_no,parent_order_id,img_url
+    </sql>
+    <sql id="orderDetailColumns">
+        id,order_id,sku_id,sku_name,img_url,order_price,sku_num,create_time,source_type,source_id,split_total_amount,split_activity_amount,split_coupon_amount
+    </sql>
+    <!--我的订单-根据用户id查询订单信息-->
+    <select id="selectOrderPageByUserId" resultMap="orderInfoMap">
+        select <include refid="orderColumns" />
+        from order_info
+        where user_id = #{userId}
+        and order_status not in('CLOSED', 'SPLIT')
+        and is_deleted = 0
+        order by id desc
+    </select>
+    <!--根据订单查询订单明细-->
+    <select id="selectOrderDetailByOrderId" resultType="com.kkz.gmall.model.order.OrderDetail">
+        select <include refid="orderDetailColumns" />
+        from order_detail
+        where order_id = #{orderId}
+        and is_deleted = 0
+        order by id desc
+    </select>
+
+<!--    <resultMap id="orderInfoMap" type="com.kkz.gmall.model.order.OrderInfo" autoMapping="true">-->
+<!--        <id column="id" property="id"></id>-->
+<!--        <collection property="orderDetailList" ofType="com.kkz.gmall.model.order.OrderDetail" autoMapping="true">-->
+<!--        <id column="detail_id" property="id"></id>-->
+<!--        </collection>-->
+<!--    </resultMap>-->
+<!--    &lt;!&ndash;我的订单&ndash;&gt;-->
+<!--    <select id="selectOrderPageByUserId" resultMap="orderInfoMap">-->
+<!--    select-->
+<!--    &lt;!&ndash;<include refid="orderResult"></include>&ndash;&gt;-->
+<!--    oi.id,-->
+<!--    oi.consignee,-->
+<!--    oi.consignee_tel,-->
+<!--    oi.total_amount,-->
+<!--    oi.order_status,-->
+<!--    oi.user_id,-->
+<!--    oi.payment_way,-->
+<!--    oi.delivery_address,-->
+<!--    oi.order_comment,-->
+<!--    oi.out_trade_no,-->
+<!--    oi.trade_body,-->
+<!--    oi.create_time,-->
+<!--    oi.expire_time,-->
+<!--    oi.process_status,-->
+<!--    od.id detail_id,-->
+<!--    od.order_id,-->
+<!--    od.sku_id,-->
+<!--    od.sku_name,-->
+<!--    od.img_url,-->
+<!--    od.order_price,-->
+<!--    od.sku_num,-->
+<!--    od.create_time-->
+<!--    from order_info oi inner  join  order_detail od-->
+<!--    on oi.id=od.order_id-->
+<!--    where oi.user_id =#{userId} and  oi.order_status not in ("CLOSED","SPLIT")-->
+<!--    order by oi.id desc-->
+<!--    </select>-->
+</mapper>

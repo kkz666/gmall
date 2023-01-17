@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -26,7 +27,71 @@ public class CartServiceImpl implements CartService {
     private RedisTemplate redisTemplate;
     @Autowired
     private ProductFeignClient productFeignClient;
-
+    /**
+     * 获取选中状态的购物车列表，获取选中状态的时候对商品的价格进行实时查询
+     * @param userId
+     * @return
+     */
+    @Override
+    public List<CartInfo> getCartCheckedList(String userId) {
+        // 定义变量接收结果
+        List<CartInfo> cartInfos = null;
+        // 获取所有数据
+        BoundHashOperations<String,String,CartInfo> boundHashOps = redisTemplate.boundHashOps(this.getKey(userId));
+        List<CartInfo> cartInfoList = boundHashOps.values();
+        // 判断处理
+        if (!CollectionUtils.isEmpty(cartInfoList)) {
+            cartInfos = cartInfoList.stream().filter(item -> {
+                // item表示购物车对象
+                // 更新购物车中商品的价格
+                item.setSkuPrice(productFeignClient.getSkuPrice(item.getSkuId()));
+                // 判断是否选中
+                return "1".equals(String.valueOf(item.getIsChecked()));
+            }).collect(Collectors.toList());
+        }
+        return cartInfos;
+    }
+    /**
+     * 删除购物车
+     * @param request
+     * @param skuId
+     */
+    @Override
+    public void deleteCart(HttpServletRequest request, Long skuId) {
+        //获取用户id
+        String userId = AuthContextHolder.getUserId(request);
+        //判断
+        if(StringUtils.isEmpty(userId)){
+            userId = AuthContextHolder.getUserTempId(request);
+        }
+        //获取数据列表
+        redisTemplate.boundHashOps(this.getKey(userId)).delete(skuId.toString());
+    }
+    /**
+     * 更改选中状态
+     * @param request
+     * @param skuId
+     * @param isChecked
+     */
+    @Override
+    public void checkCart(HttpServletRequest request, Long skuId, Integer isChecked) {
+        //获取用户id
+        String userId = AuthContextHolder.getUserId(request);
+        //判断
+        if(StringUtils.isEmpty(userId)){
+            userId = AuthContextHolder.getUserTempId(request);
+        }
+        //获取数据列表
+        BoundHashOperations<String,String,CartInfo> boundHashOps = redisTemplate.boundHashOps(this.getKey(userId));
+        //判断skuid是否存在
+        if(boundHashOps.hasKey(skuId.toString())){
+            CartInfo cartInfo = boundHashOps.get(skuId.toString());
+            //修改状态
+            cartInfo.setIsChecked(isChecked);
+            //更新
+            boundHashOps.put(skuId.toString(),cartInfo);
+        }
+    }
     /**
      * 加入购物车
      * @param skuId

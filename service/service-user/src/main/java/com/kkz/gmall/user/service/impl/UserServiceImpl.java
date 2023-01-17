@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kkz.gmall.common.constant.RedisConst;
 import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.common.util.IpUtil;
+import com.kkz.gmall.model.user.UserAddress;
 import com.kkz.gmall.model.user.UserInfo;
+import com.kkz.gmall.user.mapper.UserAddressMapper;
 import com.kkz.gmall.user.mapper.UserInfoMapper;
 import com.kkz.gmall.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +28,8 @@ public class UserServiceImpl implements UserService {
     private UserInfoMapper userInfoMapper;
     @Autowired
     private RedisTemplate redisTemplate;
-
+    @Autowired
+    private UserAddressMapper userAddressMapper;
     /**
      * 用户登录
      * @param userInfo
@@ -73,4 +77,18 @@ public class UserServiceImpl implements UserService {
         redisTemplate.delete(RedisConst.USER_LOGIN_KEY_PREFIX + request.getHeader("token"));
         return Result.ok();
     }
+    /**
+     * 查询用户地址列表
+     * @param userId
+     * @return
+     */
+    @Override
+    public List<UserAddress> findUserAddressListByUserId(Long userId) {
+        //select*from user_address where user_id=?
+        //封装查询条件
+        QueryWrapper<UserAddress> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        return userAddressMapper.selectList(queryWrapper);
+    }
+
 }

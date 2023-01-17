@@ -6,10 +6,7 @@ import com.kkz.gmall.common.util.AuthContextHolder;
 import com.kkz.gmall.model.cart.CartInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -20,6 +17,42 @@ public class CartApiController {
     @Autowired
     private CartService cartService;
 
+    /**
+     * api/cart/getCartCheckedList/{userId}
+     * 获取选中状态的购物车列表
+     * @param userId
+     * @return
+     */
+    @GetMapping("/getCartCheckedList/{userId}")
+    public List<CartInfo> getCartCheckedList(@PathVariable String userId){
+        return cartService.getCartCheckedList(userId);
+    }
+    /**
+     * api/cart/deleteCart/{skuId}
+     * 删除购物车
+     * @return
+     */
+    @DeleteMapping("/deleteCart/{skuId}")
+    public  Result deleteCart(@PathVariable Long skuId, HttpServletRequest request){
+        //删除购物车
+        cartService.deleteCart(request, skuId);
+        return Result.ok();
+    }
+    /**
+     * 更新选中状态
+     * api/cart/checkCart/{skuId}/{isChecked}
+     * @param skuId
+     * @param isChecked
+     * @return
+     */
+    @GetMapping("/checkCart/{skuId}/{isChecked}")
+    public Result checkCart(@PathVariable Long skuId,
+                            @PathVariable Integer isChecked,
+                            HttpServletRequest request){
+        //实现状态的更改
+        cartService.checkCart(request, skuId, isChecked);
+        return Result.ok();
+    }
     /**
      * /api/cart/addToCart/{skuId}/{skuNum}
      * 加入购物车
