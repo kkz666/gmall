@@ -89,9 +89,18 @@ public class MQProducerAckConfig implements RabbitTemplate.ConfirmCallback, Rabb
             //更新redis
             redisTemplate.opsForValue().set(gmallCorrelationData.getId(), JSON.toJSONString(gmallCorrelationData));
             System.out.println("重试次数：\t" + retryCount);
-            //重新发送
-            rabbitTemplate.convertAndSend(gmallCorrelationData.getExchange(), gmallCorrelationData.getRoutingKey(),
-                    gmallCorrelationData.getMessage(), gmallCorrelationData);
+            //判断是否延迟
+            if(gmallCorrelationData.isDelay()){
+                this.rabbitTemplate.convertAndSend(gmallCorrelationData.getExchange(), gmallCorrelationData.getRoutingKey(),
+                        gmallCorrelationData.getMessage(), message -> {
+                            message.getMessageProperties().setDelay(gmallCorrelationData.getDelayTime() * 1000);
+                            return message;
+                        }, gmallCorrelationData);
+            } else {
+                //重新发送
+                this.rabbitTemplate.convertAndSend(gmallCorrelationData.getExchange(), gmallCorrelationData.getRoutingKey(),
+                        gmallCorrelationData.getMessage(), gmallCorrelationData);
+            }
         }
     }
 }

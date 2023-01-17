@@ -28,6 +28,7 @@
         <module name="model" />
         <module name="service-cart-client" />
         <module name="service-item" />
+        <module name="service-payment" />
       </profile>
     </annotationProcessing>
   </component>
@@ -49,6 +50,7 @@
       <module name="service-mq" options="-parameters" />
       <module name="service-order" options="-parameters" />
       <module name="service-order-client" options="-parameters" />
+      <module name="service-payment" options="-parameters" />
       <module name="service-product" options="-parameters" />
       <module name="service-product-client" options="-parameters" />
       <module name="service-user" options="-parameters" />

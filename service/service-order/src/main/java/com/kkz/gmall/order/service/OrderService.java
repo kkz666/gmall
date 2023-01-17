@@ -2,13 +2,14 @@ package com.kkz.gmall.order.service;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.model.order.OrderInfo;
 import org.apache.ibatis.annotations.Mapper;
 
 import javax.servlet.http.HttpServletRequest;
 
-public interface OrderService  {
+public interface OrderService extends IService<OrderInfo> {
     /**
      * 保存订单
      * @param orderInfo
@@ -63,4 +64,15 @@ public interface OrderService  {
      * @return
      */
     IPage<OrderInfo> getOrderPageByUserId(Long page, Long limit, HttpServletRequest request);
+    /**
+     * 处理超时订单
+     * @param orderId
+     */
+    void execExpiredOrder(Long orderId);
+    /**
+     * 根据订单Id 查询订单信息
+     * @param orderId
+     * @return
+     */
+    OrderInfo getOrderInfoById(Long orderId);
 }

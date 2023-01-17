@@ -1,12 +1,15 @@
 package com.kkz.gmall.order.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kkz.gmall.cart.client.CartFeignClient;
 import com.kkz.gmall.common.constant.RedisConst;
 import com.kkz.gmall.common.result.Result;
 import com.kkz.gmall.common.util.AuthContextHolder;
 import com.kkz.gmall.common.util.HttpClientUtil;
+import com.kkz.gmall.constant.MqConst;
 import com.kkz.gmall.model.cart.CartInfo;
 import com.kkz.gmall.model.enums.OrderStatus;
 import com.kkz.gmall.model.enums.PaymentWay;
@@ -18,6 +21,7 @@ import com.kkz.gmall.order.mapper.OrderDetailMapper;
 import com.kkz.gmall.order.mapper.OrderInfoMapper;
 import com.kkz.gmall.order.service.OrderService;
 import com.kkz.gmall.product.client.ProductFeignClient;
+import com.kkz.gmall.service.RabbitService;
 import com.kkz.gmall.user.client.UserFeignClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +39,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderServiceImpl implements OrderService {
+public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> implements OrderService {
     @Autowired
     private UserFeignClient userFeignClient;
     @Autowired
@@ -52,6 +56,25 @@ public class OrderServiceImpl implements OrderService {
     private ThreadPoolExecutor executor;
     @Value("${ware.url}")
     private String wareUrl;
+    @Autowired
+    private RabbitService rabbitService;
+    /**
+     * 根据订单Id 查询订单信息
+     * @param orderId
+     * @return
+     */
+    @Override
+    public OrderInfo getOrderInfoById(Long orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
+        //判断
+        if(orderInfo != null){
+            QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("order_id", orderId);
+            List<OrderDetail> orderDetailList = orderDetailMapper.selectList(queryWrapper);
+            orderInfo.setOrderDetailList(orderDetailList);
+        }
+        return orderInfo;
+    }
 
     /**
      * 提交订单
@@ -110,6 +133,10 @@ public class OrderServiceImpl implements OrderService {
         }
         //删除购物车
 //        redisTemplate.delete(RedisConst.USER_KEY_PREFIX + orderInfo.getUserId() + RedisConst.USER_CART_KEY_SUFFIX);
+        //发送消息
+        rabbitService.sendDelayedMessage(MqConst.EXCHANGE_DIRECT_ORDER_CANCEL,
+                MqConst.ROUTING_ORDER_CANCEL,
+                orderInfo.getId(), MqConst.DELAY_TIME);
         //返回订单id
         return orderInfo.getId();
     }
@@ -326,5 +353,28 @@ public class OrderServiceImpl implements OrderService {
             item.setOrderStatusName(OrderStatus.getStatusNameByStatus(item.getOrderStatus()));
         });
         return orderInfoIPage;
+    }
+    /**
+     * 处理超时订单
+     * @param orderId
+     */
+    @Override
+    public void execExpiredOrder(Long orderId) {
+        //关闭订单
+        this.updateOrderStatus(orderId, ProcessStatus.CLOSED);
+    }
+    /**
+     * 修改订单状态
+     * @param orderId
+     * @param processStatus
+     */
+    private void updateOrderStatus(Long orderId, ProcessStatus processStatus) {
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setId(orderId);
+        //修改订单状态
+        orderInfo.setOrderStatus(processStatus.getOrderStatus().name());
+        //修改订单进度状态
+        orderInfo.setProcessStatus(processStatus.name());
+        orderInfoMapper.updateById(orderInfo);
     }
 }

@@ -49,6 +49,10 @@ public class SearchServiceImpl implements SearchService {
     @Autowired
     private RestHighLevelClient highLevelClient;
 
+    /**
+     * 上架商品
+     * @param skuId
+     */
     @Override
     public void upperGoods(Long skuId) {
         // 创建封装数据对象
@@ -104,6 +108,7 @@ public class SearchServiceImpl implements SearchService {
      */
     @Override
     public void lowerGoods(Long skuId) {
+        System.out.println("商品下架");
         goodsRepository.deleteById(skuId);
     }
 

@@ -26,7 +26,16 @@ import java.util.stream.Collectors;
 public class OrderApiController {
     @Autowired
     private OrderService orderService;
-
+    /**
+     *  /api/order/inner/getOrderInfo/{orderId}
+     * 根据订单Id 查询订单信息
+     * @param oderId
+     * @return
+     */
+    @GetMapping("/inner/getOrderInfo/{orderId}")
+    public OrderInfo getOrderInfo(@PathVariable Long orderId){
+        return orderService.getOrderInfoById(orderId);
+    }
     /**
      * /api/order/auth/{page}/{limit}
      * 我的订单

@@ -6,12 +6,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kkz.gmall.common.cache.GmallCache;
 import com.kkz.gmall.common.constant.RedisConst;
+import com.kkz.gmall.constant.MqConst;
 import com.kkz.gmall.model.product.*;
 import com.kkz.gmall.product.mapper.*;
 import com.kkz.gmall.product.service.ManagerService;
+import com.kkz.gmall.service.RabbitService;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -66,6 +69,8 @@ public class ManagerServiceImpl implements ManagerService {
     private RedisTemplate redisTemplate;
     @Autowired
     private RedissonClient redissonClient;
+    @Autowired
+    private RabbitService rabbitService;
 
     @Override
     public List<BaseCategory1> getCategory1() {
@@ -371,14 +376,18 @@ public class ManagerServiceImpl implements ManagerService {
      * @param skuId
      */
     @Override
+    @Transactional
     public void onSale(Long skuId) {
         //封装对象
-        SkuInfo skuInfo=new SkuInfo();
+        SkuInfo skuInfo = new SkuInfo();
         //设置条件
         skuInfo.setId(skuId);
         //设置修改的内容
         skuInfo.setIsSale(1);
         skuInfoMapper.updateById(skuInfo);
+        // 将上架消息发送到消息队列
+        rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_GOODS,
+                MqConst.ROUTING_GOODS_UPPER, skuId);
     }
 
     /**
@@ -387,14 +396,17 @@ public class ManagerServiceImpl implements ManagerService {
      * @param skuId
      */
     @Override
+    @Transactional
     public void cancelSale(Long skuId) {
         //封装对象
-        SkuInfo skuInfo=new SkuInfo();
+        SkuInfo skuInfo = new SkuInfo();
         //设置条件
         skuInfo.setId(skuId);
         //设置修改的内容
         skuInfo.setIsSale(0);
         skuInfoMapper.updateById(skuInfo);
+        //发送消息
+        rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_GOODS, MqConst.ROUTING_GOODS_LOWER, skuId);
     }
     /**
      * 根据skuId查询skuInfo信息和图片列表

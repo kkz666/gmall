@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
-public class AuthGlobalFilter implements GlobalFilter {
+public class    AuthGlobalFilter implements GlobalFilter {
     @Autowired
     private RedisTemplate redisTemplate;
     //读取白名单
