@@ -30,7 +30,7 @@ public class PayMentController {
     @GetMapping("/pay.html")
     public String pay(Long orderId , Model model){
         OrderInfo orderInfo = orderFeignClient.getOrderInfo(orderId);
-        model.addAttribute("orderInfo",orderInfo);
+        model.addAttribute("orderInfo", orderInfo);
         return "payment/pay";
     }
 }

@@ -29,7 +29,7 @@ public class OrderApiController {
     /**
      *  /api/order/inner/getOrderInfo/{orderId}
      * 根据订单Id 查询订单信息
-     * @param oderId
+     * @param orderId
      * @return
      */
     @GetMapping("/inner/getOrderInfo/{orderId}")

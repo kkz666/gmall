@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kkz.gmall.common.result.Result;
+import com.kkz.gmall.model.enums.ProcessStatus;
 import com.kkz.gmall.model.order.OrderInfo;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -75,4 +76,15 @@ public interface OrderService extends IService<OrderInfo> {
      * @return
      */
     OrderInfo getOrderInfoById(Long orderId);
+    /**
+     * 修改订单状态
+     * @param orderId
+     * @param processStatus
+     */
+    void updateOrderStatus(Long orderId, ProcessStatus processStatus);
+    /**
+     * 发送消息扣减库存
+     * @param orderInfo
+     */
+    void sendOrderStatus(OrderInfo orderInfo);
 }

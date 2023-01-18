@@ -1,5 +1,6 @@
 package com.kkz.gmall.order.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -150,10 +151,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
     public Result submitOrder(OrderInfo orderInfo, HttpServletRequest request) {
         //获取用户id
         String userId = AuthContextHolder.getUserId(request);
-        //校验流水号
+        //校验流水号out_of_trade_no
         String tradeNo = request.getParameter("tradeNo");
         boolean result = this.checkTradeCode(userId, tradeNo);
-        if(!result){
+        if (!result) {
             return Result.fail().message("不能重复提交订单");
         }
 
@@ -166,7 +167,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
         if (!CollectionUtils.isEmpty(orderDetailList)) {
             for (OrderDetail orderDetail : orderDetailList) {
                 // 异步编排
-
                 CompletableFuture<Void> sotckComplatebleFuturen = CompletableFuture.runAsync(() -> {
                     // 验证库存
                     boolean flag = this.checkStock(String.valueOf(orderDetail.getSkuId()),
@@ -270,7 +270,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
         resultMap.put("totalAmount", orderInfo.getTotalAmount());
         //携带流水号
         String tradeNo = this.getTradeNo(userId);
-        //存储流水号
+        //存储流水号out_of_trade_no
         resultMap.put("tradeNo", tradeNo);
         return Result.ok(resultMap);
     }
@@ -368,7 +368,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
      * @param orderId
      * @param processStatus
      */
-    private void updateOrderStatus(Long orderId, ProcessStatus processStatus) {
+    public void updateOrderStatus(Long orderId, ProcessStatus processStatus) {
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.setId(orderId);
         //修改订单状态
@@ -376,5 +376,48 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
         //修改订单进度状态
         orderInfo.setProcessStatus(processStatus.name());
         orderInfoMapper.updateById(orderInfo);
+    }
+    /**
+     * 发送消息扣减库存
+     * @param orderInfo
+     */
+    @Override
+    public void sendOrderStatus(OrderInfo orderInfo) {
+        //修改订单流程状态
+        this.updateOrderStatus(orderInfo.getId(), ProcessStatus.NOTIFIED_WARE);
+        //封装数据对象
+        String strJson = this.initWareOrder(orderInfo);
+        //发送消息
+        this.rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_WARE_STOCK,
+                MqConst.ROUTING_WARE_STOCK, strJson);
+    }
+    /**
+     * 封装 数据
+     * @param orderInfo
+     * @return
+     */
+    private String initWareOrder(OrderInfo orderInfo) {
+        Map<String, Object> resultMap = new HashMap<>();
+        resultMap.put("orderId", orderInfo.getId());
+        resultMap.put("consignee", orderInfo.getConsignee());
+        resultMap.put("consigneeTel", orderInfo.getConsigneeTel());
+        resultMap.put("orderComment", orderInfo.getOrderComment());
+        resultMap.put("orderBody", orderInfo.getTradeBody());
+        resultMap.put("deliveryAddress", orderInfo.getDeliveryAddress());
+        resultMap.put("paymentWay", "2");
+        List<OrderDetail> orderDetailList = orderInfo.getOrderDetailList();
+        //判断
+        if (!CollectionUtils.isEmpty(orderDetailList)) {
+            List<OrderDetail> listMap = orderDetailList.stream().map(orderDetail -> {
+                Map<String, Object> orderDetailMap = new HashMap<>();
+                orderDetailMap.put("skuId", orderDetail.getSkuId());
+                orderDetailMap.put("skuNum", orderDetail.getSkuNum());
+                orderDetailMap.put("skuName", orderDetail.getSkuName());
+                return orderDetail;
+            }).collect(Collectors.toList());
+            //封装订单明细
+            resultMap.put("details", listMap);
+        }
+        return JSON.toJSONString(resultMap);
     }
 }
