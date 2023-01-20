@@ -117,4 +117,22 @@ public class PaymentServiceImpl implements PaymentService {
         queryWrapper.eq("payment_type", name);
         paymentInfoMapper.update(paymentInfo, queryWrapper);
     }
+    /**
+     * 关闭交易记录
+     * @param orderId
+     */
+    @Override
+    public void closePayment(Long orderId) {
+        //判断支付记录是否存在
+        QueryWrapper<PaymentInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("order_id", orderId);
+        //查询
+        Integer count = paymentInfoMapper.selectCount(queryWrapper);
+        if(count == 0) return;
+        //修改支付记录-关闭
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setPaymentStatus(PaymentStatus.CLOSED.name());
+        queryWrapper.eq("payment_status", "UNPAID");
+        paymentInfoMapper.update(paymentInfo, queryWrapper);
+    }
 }

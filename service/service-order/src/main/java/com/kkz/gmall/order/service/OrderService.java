@@ -9,6 +9,8 @@ import com.kkz.gmall.model.order.OrderInfo;
 import org.apache.ibatis.annotations.Mapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 
 public interface OrderService extends IService<OrderInfo> {
     /**
@@ -69,7 +71,7 @@ public interface OrderService extends IService<OrderInfo> {
      * 处理超时订单
      * @param orderId
      */
-    void execExpiredOrder(Long orderId);
+    void execExpiredOrder(Long orderId, String flag);
     /**
      * 根据订单Id 查询订单信息
      * @param orderId
@@ -87,4 +89,17 @@ public interface OrderService extends IService<OrderInfo> {
      * @param orderInfo
      */
     void sendOrderStatus(OrderInfo orderInfo);
+    /**
+     * 转换数据
+     * @param orderInfo
+     * @return
+     */
+    Map<String, Object> initWareOrderMap(OrderInfo orderInfo);
+    /**
+     * 拆单
+     * @param orderId
+     * @param wareSkuMap
+     * @return
+     */
+    List<OrderInfo> orderSplit(String orderId, String wareSkuMap);
 }

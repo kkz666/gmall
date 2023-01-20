@@ -54,7 +54,7 @@ public class GwareController {
     }
 
 
-    //根据skuid 返回 仓库
+    //根据skuid返回仓库
     @RequestMapping(value = "skuWareInfo")
     @ResponseBody
     public  ResponseEntity<String> getWareInfoBySkuid(String skuid){
@@ -73,7 +73,7 @@ public class GwareController {
           gwareService.addWareInfo();
     }
 
-    //根据skuid 返回 仓库
+    //根据skuid返回仓库
     @RequestMapping(value = "wareSkuMap"  )
     @ResponseBody
     public ResponseEntity<String> getWareSkuMap(@RequestParam("skuid") List<String> skuidsList){

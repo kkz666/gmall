@@ -17,6 +17,8 @@
         <module>service-cart-client</module>
         <module>service-user-client</module>
         <module>service-order-client</module>
+        <module>service-payment-client</module>
+        <module>service-activity-client</module>
     </modules>
 
     <properties>

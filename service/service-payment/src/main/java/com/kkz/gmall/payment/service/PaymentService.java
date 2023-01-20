@@ -32,4 +32,9 @@ public interface PaymentService {
      * @param paymentInfo
      */
     void updatePaymentInfoStatus(String outTradeNo, String name, PaymentInfo paymentInfo);
+    /**
+     * 关闭交易记录
+     * @param orderId
+     */
+    void closePayment(Long orderId);
 }

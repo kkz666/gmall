@@ -20,6 +20,7 @@
         <module>service-order</module>
         <module>service-mq</module>
         <module>service-payment</module>
+        <module>service-activity</module>
     </modules>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

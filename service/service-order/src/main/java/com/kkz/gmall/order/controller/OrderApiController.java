@@ -1,5 +1,6 @@
 package com.kkz.gmall.order.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.kkz.gmall.cart.client.CartFeignClient;
 import com.kkz.gmall.common.result.Result;
@@ -16,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,31 @@ import java.util.stream.Collectors;
 public class OrderApiController {
     @Autowired
     private OrderService orderService;
+    /**
+     * //http://localhost:8204/api/order/orderSplit
+     * 拆单实现
+     * @return
+     *
+     * [{"wareId":"1","skuIds":["2","10"]},{"wareId":"2","skuIds":["3"]}]
+     */
+    @PostMapping("/orderSplit")
+    public String orderSplit(HttpServletRequest request) {
+        // 获取订单id
+        String orderId = request.getParameter("orderId");
+        String wareSkuMap = request.getParameter("wareSkuMap");
+        // 调用service处理拆单
+        List<OrderInfo> orderInfoList = this.orderService.orderSplit(orderId,wareSkuMap);
+        // 创建集合封装数据
+        List<Map<String, Object>> resultMap = new ArrayList<>();
+        // 遍历处理
+        if (!CollectionUtils.isEmpty(orderInfoList)) {
+            for (OrderInfo orderInfo : orderInfoList) {
+                Map<String, Object> orderMap = this.orderService.initWareOrderMap(orderInfo);
+                resultMap.add(orderMap);
+            }
+        }
+        return JSON.toJSONString(resultMap);
+    }
     /**
      *  /api/order/inner/getOrderInfo/{orderId}
      * 根据订单Id 查询订单信息

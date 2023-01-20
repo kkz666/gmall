@@ -24,6 +24,7 @@ import com.kkz.gmall.order.service.OrderService;
 import com.kkz.gmall.product.client.ProductFeignClient;
 import com.kkz.gmall.service.RabbitService;
 import com.kkz.gmall.user.client.UserFeignClient;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -157,7 +158,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
         if (!result) {
             return Result.fail().message("不能重复提交订单");
         }
-
         //验证库存
         List<OrderDetail> orderDetailList = orderInfo.getOrderDetailList();
         //定义集合收集异步对象
@@ -359,9 +359,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
      * @param orderId
      */
     @Override
-    public void execExpiredOrder(Long orderId) {
+    public void execExpiredOrder(Long orderId, String flag) {
         //关闭订单
         this.updateOrderStatus(orderId, ProcessStatus.CLOSED);
+        if ("2".equals(flag)) {
+            //发送消息取消交易记录
+            this.rabbitService.sendMessage(MqConst.EXCHANGE_DIRECT_PAYMENT_CLOSE,
+                    MqConst.ROUTING_PAYMENT_CLOSE, orderId);
+        }
     }
     /**
      * 修改订单状态
@@ -419,5 +424,111 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper,OrderInfo> imp
             resultMap.put("details", listMap);
         }
         return JSON.toJSONString(resultMap);
+    }
+    /**
+     * 转化数据
+     * @param orderInfo
+     * @return
+     */
+    @Override
+    public Map<String, Object> initWareOrderMap(OrderInfo orderInfo) {
+        Map<String,Object> resultMap = new HashMap<>();
+        resultMap.put("orderId", orderInfo.getId());
+        resultMap.put("consignee", orderInfo.getConsignee());
+        resultMap.put("consigneeTel", orderInfo.getConsigneeTel());
+        resultMap.put("orderComment", orderInfo.getOrderComment());
+        resultMap.put("orderBody", orderInfo.getTradeBody());
+        resultMap.put("deliveryAddress", orderInfo.getDeliveryAddress());
+        resultMap.put("paymentWay", "2");
+        // 设置仓库
+        resultMap.put("wareId", orderInfo.getWareId());
+        List<OrderDetail> orderDetailList = orderInfo.getOrderDetailList();
+        //判断
+        if(!CollectionUtils.isEmpty(orderDetailList)){
+            List<OrderDetail> listMap = orderDetailList.stream().map(orderDetail -> {
+                Map<String, Object> orderDetailMap = new HashMap<>();
+                orderDetailMap.put("skuId", orderDetail.getSkuId());
+                orderDetailMap.put("skuNum", orderDetail.getSkuNum());
+                orderDetailMap.put("skuName", orderDetail.getSkuName());
+                return orderDetail;
+            }).collect(Collectors.toList());
+            //封装订单明细
+            resultMap.put("details", listMap);
+        }
+        return resultMap;
+    }
+    /**
+     * 拆单
+     * @param orderId
+     * @param wareSkuMap
+     * @return
+     *
+     *
+     * wareSkuMap
+     *  [{"wareId":"1","skuIds":["2","10"]},{"wareId":"2","skuIds":["3"]}]
+     *
+     *
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<OrderInfo> orderSplit(String orderId, String wareSkuMap) {
+        //创建集合封装订单信息
+        List<OrderInfo> resultList = new ArrayList<>();
+        //转换拆单信息数据
+        //[{"wareId":"1","skuIds":["2","10"]},{"wareId":"2","skuIds":["3"]}]
+        List<Map> mapList = JSON.parseArray(wareSkuMap, Map.class);
+        //获取父订单对象
+        OrderInfo orderOrigin = this.getOrderInfoById(Long.parseLong(orderId));
+        //判断处理
+        if(!CollectionUtils.isEmpty(mapList)){
+            for (Map map : mapList) {
+                //{"wareId":"1","skuIds":["2","10"]}
+                // 获取仓库id
+                String wareId = (String) map.get("wareId");
+                // 转换
+                List<String> skuIds = (List<String>) map.get("skuIds");
+                // 创建子订单
+                OrderInfo subOrderInfo = new OrderInfo();
+                // 拷贝数据到子订单
+                BeanUtils.copyProperties(orderOrigin, subOrderInfo);
+                // 置空id
+                subOrderInfo.setId(null);
+                // 设置仓库
+                subOrderInfo.setWareId(wareId);
+                // 设置父订单
+                subOrderInfo.setParentOrderId(orderOrigin.getId());
+                // 设置商品明细
+                // 获取父订单商品总明细
+                List<OrderDetail> orderDetailList = orderOrigin.getOrderDetailList();
+                // 创建介绍的集合
+                List<OrderDetail> orderDetails = new ArrayList<>();
+                // 商品描述
+                StringBuilder builder = new StringBuilder();
+                // 判断
+                if (!CollectionUtils.isEmpty(orderDetailList)) {
+                    for (OrderDetail orderDetail : orderDetailList) {
+                        //对比是当前仓库的商品，就收集
+                        for (String skuId : skuIds) {
+                            //对比
+                            if (Long.parseLong(skuId) == orderDetail.getSkuId().longValue()) {
+                                orderDetails.add(orderDetail);
+                                builder.append(orderDetail.getSkuName() + " ");
+                            }
+                        }
+                    }
+                }
+                subOrderInfo.setOrderDetailList(orderDetails);
+                // 总金额--前提必须要有商品明细
+                subOrderInfo.sumTotalAmount();
+                // 设置商品描述
+                subOrderInfo.setTradeBody(builder.toString());
+                // 子订单添加到数据库
+                this.saveOrder(subOrderInfo);
+                resultList.add(subOrderInfo);
+            }
+        }
+        //修改父订单状态
+        this.updateOrderStatus(Long.parseLong(orderId), ProcessStatus.SPLIT);
+        return resultList;
     }
 }

@@ -36,6 +36,12 @@
             <artifactId>rabbit-util</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.kkz.gmall</groupId>
+            <artifactId>service-payment-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
 </project>

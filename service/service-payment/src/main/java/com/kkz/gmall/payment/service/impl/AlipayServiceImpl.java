@@ -3,8 +3,12 @@ package com.kkz.gmall.payment.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
+import com.alipay.api.request.AlipayTradeCloseRequest;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.request.AlipayTradeRefundRequest;
+import com.alipay.api.response.AlipayTradeCloseResponse;
+import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.alipay.api.response.AlipayTradeRefundResponse;
 import com.kkz.gmall.model.enums.PaymentStatus;
 import com.kkz.gmall.model.enums.PaymentType;
@@ -114,6 +118,63 @@ public class AlipayServiceImpl implements AlipayService {
             // 支付记录
             this.paymentService.updatePaymentInfoStatus(orderInfo.getOutTradeNo(), PaymentType.ALIPAY.name(), paymentInfo);
             // TODO 订单状态--发送mq消息
+            return true;
+        } else {
+            System.out.println("调用失败");
+            return false;
+        }
+    }
+    /**
+     * 查询支付宝交易记录
+     * @param orderId
+     * @return
+     */
+    @Override
+    public Boolean checkPayment(Long orderId) {
+        //根据orderIc查询订单对象
+        OrderInfo orderInfo = orderFeignClient.getOrderInfo(orderId);
+        //判断
+        if (orderInfo == null) {
+            return false;
+        }
+        AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
+        JSONObject bizContent = new JSONObject();
+        bizContent.put("out_trade_no", orderInfo.getOutTradeNo());
+        request.setBizContent(bizContent.toString());
+        AlipayTradeQueryResponse response = null;
+        try {
+            response = alipayClient.execute(request);
+        } catch (AlipayApiException e) {
+            e.printStackTrace();
+        }
+        if (response.isSuccess()) {
+            System.out.println("调用成功");
+            return true;
+        } else {
+            System.out.println("调用失败");
+            return false;
+        }
+    }
+    /**
+     *  支付宝关闭交易
+     * @param orderId
+     * @return
+     */
+    @Override
+    public Boolean closePay(Long orderId) {
+        OrderInfo orderInfo = orderFeignClient.getOrderInfo(orderId);
+        AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
+        JSONObject bizContent = new JSONObject();
+        bizContent.put("out_trade_no", orderInfo.getOutTradeNo());
+        request.setBizContent(bizContent.toString());
+        AlipayTradeCloseResponse response = null;
+        try {
+            response = alipayClient.execute(request);
+        } catch (AlipayApiException e) {
+            e.printStackTrace();
+        }
+        if(response.isSuccess()){
+            System.out.println("调用成功");
             return true;
         } else {
             System.out.println("调用失败");

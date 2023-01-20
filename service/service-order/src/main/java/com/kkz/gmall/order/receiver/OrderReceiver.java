@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.kkz.gmall.constant.MqConst;
 import com.kkz.gmall.model.enums.ProcessStatus;
 import com.kkz.gmall.model.order.OrderInfo;
+import com.kkz.gmall.model.payment.PaymentInfo;
 import com.kkz.gmall.order.service.OrderService;
+import com.kkz.gmall.payment.client.PaymentFeignClient;
 import com.rabbitmq.client.Channel;
 import lombok.SneakyThrows;
 import org.springframework.amqp.core.Message;
@@ -22,6 +24,8 @@ import java.util.Map;
 public class OrderReceiver {
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private PaymentFeignClient paymentFeignClient;
     /**
      * 订单超时，判断订单状态
      *  已支付，不进行操作
@@ -44,9 +48,31 @@ public class OrderReceiver {
                 if (orderInfo != null) {
                     //获取状态进行判断
                     if ("UNPAID".equals(orderInfo.getOrderStatus()) && "UNPAID".equals(orderInfo.getProcessStatus())) {
-                        //调用接口关闭订单
-                        //处理超时订单
-                        orderService.execExpiredOrder(orderId);
+                        // 查询支付记录信息
+                        PaymentInfo paymentInfo = paymentFeignClient.getPaymentInfo(orderInfo.getOutTradeNo());
+                        // 判断状态
+                        if (paymentInfo != null && "UNPAID".equals(paymentInfo.getPaymentStatus())) {
+                            // 查询支付宝记录
+                            Boolean flag = this.paymentFeignClient.checkPayment(orderId);
+                            if (flag) {
+                                //有支付宝记录
+                                Boolean result = this.paymentFeignClient.closePay(orderId);
+                                // 关闭支付宝支付成功
+                                if (result) {
+                                    //设置2表示  关闭订单 关闭支付记录
+                                    orderService.execExpiredOrder(orderId,"2");
+                                }else{
+                                    //有可能是已支付
+                                }
+                            } else {
+                                orderService.execExpiredOrder(orderId,"2");
+                            }
+                        } else {
+                            // 没有支付宝支付记录
+                            // 调用接口关闭订单
+                            // 处理超时订单
+                            orderService.execExpiredOrder(orderId, "1");
+                        }
                     }
                 }
             }

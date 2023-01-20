@@ -28,6 +28,40 @@ public class PaymentApiController {
     private RedisTemplate redisTemplate;
 
     /**
+     * 查询支付记录信息
+     * @param outTradeNo
+     * @return
+     */
+    @GetMapping("getPaymentInfo/{outTradeNo}")
+    @ResponseBody
+    public PaymentInfo getPaymentInfo(@PathVariable String outTradeNo){
+        return paymentService.getPaymentInfo(outTradeNo, PaymentType.ALIPAY.name());
+    }
+    /**
+     * http://localhost:8205/api/payment/alipay/closePay/25
+     * 支付宝关闭交易
+     * @param orderId
+     * @return
+     */
+    @GetMapping("/closePay/{orderId}")
+    @ResponseBody
+    public Boolean closePay(@PathVariable Long orderId){
+        Boolean flag = this.alipayService.closePay(orderId);
+        return flag;
+    }
+    /**
+     * http://localhost:8205/api/payment/alipay/checkPayment/30
+     * 查询支付宝交易记录
+     * @param orderId
+     * @return
+     */
+    @GetMapping("/checkPayment/{orderId}")
+    @ResponseBody
+    public Boolean checkPayment(@PathVariable Long orderId){
+        Boolean flag = this.alipayService.checkPayment(orderId);
+        return flag;
+    }
+    /**
      * 支付宝下单
      * http://api.gmall.com/api/payment/alipay/submit/99
      *
@@ -55,7 +89,7 @@ public class PaymentApiController {
      * @return
      */
     @PostMapping("/callback/notify")
-    public String notifyCallBakc(@RequestParam Map<String, String> paramsMap) {
+    public String notifyCallBack(@RequestParam Map<String, String> paramsMap) {
         //实现验签
         //调用SDK验证签名
         boolean signVerified = false;
