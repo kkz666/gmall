@@ -23,6 +23,7 @@
         <module name="service-payment" />
         <module name="server-gateway" />
         <module name="common-util" />
+        <module name="service-task" />
         <module name="service-util" />
         <module name="service-payment-client" />
         <module name="service-activity-client" />
@@ -59,6 +60,7 @@
       <module name="service-payment-client" options="-parameters" />
       <module name="service-product" options="-parameters" />
       <module name="service-product-client" options="-parameters" />
+      <module name="service-task" options="-parameters" />
       <module name="service-user" options="-parameters" />
       <module name="service-user-client" options="-parameters" />
       <module name="service-util" options="-parameters" />

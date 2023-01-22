@@ -28,11 +28,16 @@ public class RedisConst {
     //    public static final String userinfoKey_suffix = ":info";
     public static final int USERKEY_TIMEOUT = 60 * 60 * 24 * 7;
 
-    //秒杀商品前缀
+    // 秒杀商品前缀
+    // 存储预热商品
     public static final String SECKILL_GOODS = "seckill:goods";
+    // 存储用户抢购订单信息(订单支付)
     public static final String SECKILL_ORDERS = "seckill:orders";
+    // 总订单信息
     public static final String SECKILL_ORDERS_USERS = "seckill:orders:users";
+    // 库存前缀
     public static final String SECKILL_STOCK_PREFIX = "seckill:stock:";
+    // 用户抢购标识
     public static final String SECKILL_USER = "seckill:user:";
     //用户锁定时间 单位：秒
     public static final int SECKILL__TIMEOUT = 60 * 60 * 1;
